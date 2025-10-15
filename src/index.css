@@ -4,71 +4,73 @@
 
 :root {
   --radius: 0.625rem;
-  --background: 240 242 247;
-  --foreground: 45 45 48;
-  --card: 240 242 247;
-  --card-foreground: 45 45 48;
-  --popover: 240 242 247;
-  --popover-foreground: 45 45 48;
-  --primary: 99 102 241;
-  --primary-foreground: 255 255 255;
-  --secondary: 229 229 232;
-  --secondary-foreground: 45 45 48;
-  --muted: 229 229 232;
-  --muted-foreground: 107 114 128;
-  --accent: 229 229 232;
-  --accent-foreground: 45 45 48;
-  --destructive: 239 68 68;
-  --border: 209 213 219;
-  --input: 229 231 235;
-  --ring: 99 102 241;
-  --chart-1: 245 158 11;
-  --chart-2: 16 185 129;
-  --chart-3: 59 130 246;
-  --chart-4: 139 92 246;
-  --chart-5: 249 115 22;
-  --sidebar: 249 250 251;
-  --sidebar-foreground: 45 45 48;
-  --sidebar-primary: 99 102 241;
-  --sidebar-primary-foreground: 255 255 255;
-  --sidebar-accent: 229 229 232;
-  --sidebar-accent-foreground: 45 45 48;
-  --sidebar-border: 209 213 219;
-  --sidebar-ring: 99 102 241;
+  /* Soothing light theme with warm off-whites and slate text */
+  --background: 0 0% 99.6%;
+  --foreground: 215 20% 35%;
+  --card: 0 0% 98%;
+  --card-foreground: 215 20% 35%;
+  --popover: 0 0% 98%;
+  --popover-foreground: 215 20% 35%;
+  --primary: 238 84% 67%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 20% 95%;
+  --secondary-foreground: 215 20% 35%;
+  --muted: 210 40% 97%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 210 20% 95%;
+  --accent-foreground: 215 20% 35%;
+  --destructive: 0 84% 60%;
+  --border: 214 32% 91%;
+  --input: 210 20% 95%;
+  --ring: 238 84% 67%;
+  --chart-1: 32 95% 44%;
+  --chart-2: 142 76% 36%;
+  --chart-3: 221 83% 53%;
+  --chart-4: 262 83% 58%;
+  --chart-5: 25 95% 53%;
+  --sidebar: 210 40% 97%;
+  --sidebar-foreground: 215 20% 35%;
+  --sidebar-primary: 238 84% 67%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 210 20% 95%;
+  --sidebar-accent-foreground: 215 20% 35%;
+  --sidebar-border: 214 32% 91%;
+  --sidebar-ring: 238 84% 67%;
 }
 
 .dark {
-  --background: 26 26 29;
-  --foreground: 229 229 232;
-  --card: 31 31 35;
-  --card-foreground: 229 229 232;
-  --popover: 31 31 35;
-  --popover-foreground: 229 229 232;
-  --primary: 129 140 248;
-  --primary-foreground: 26 26 29;
-  --secondary: 45 45 48;
-  --secondary-foreground: 229 229 232;
-  --muted: 45 45 48;
-  --muted-foreground: 156 163 175;
-  --accent: 45 45 48;
-  --accent-foreground: 229 229 232;
-  --destructive: 248 113 113;
-  --border: 55 65 81;
-  --input: 55 65 81;
-  --ring: 129 140 248;
-  --chart-1: 251 191 36;
-  --chart-2: 52 211 153;
-  --chart-3: 96 165 250;
-  --chart-4: 167 139 250;
-  --chart-5: 251 146 60;
-  --sidebar: 22 22 26;
-  --sidebar-foreground: 229 229 232;
-  --sidebar-primary: 129 140 248;
-  --sidebar-primary-foreground: 26 26 29;
-  --sidebar-accent: 45 45 48;
-  --sidebar-accent-foreground: 229 229 232;
-  --sidebar-border: 55 65 81;
-  --sidebar-ring: 129 140 248;
+  /* Comfortable dark theme with slate background and warm white text */
+  --background: 215 28% 17%;
+  --foreground: 210 40% 98%;
+  --card: 215 28% 22%;
+  --card-foreground: 210 40% 98%;
+  --popover: 215 28% 22%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 238 84% 67%;
+  --primary-foreground: 215 28% 17%;
+  --secondary: 215 20% 25%;
+  --secondary-foreground: 210 40% 95%;
+  --muted: 215 20% 25%;
+  --muted-foreground: 217 33% 80%;
+  --accent: 215 20% 25%;
+  --accent-foreground: 210 40% 95%;
+  --destructive: 0 75% 60%;
+  --border: 215 20% 37%;
+  --input: 215 20% 25%;
+  --ring: 238 84% 67%;
+  --chart-1: 32 95% 44%;
+  --chart-2: 142 76% 36%;
+  --chart-3: 221 83% 53%;
+  --chart-4: 262 83% 58%;
+  --chart-5: 25 95% 53%;
+  --sidebar: 222 47% 11%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 238 84% 67%;
+  --sidebar-primary-foreground: 215 28% 17%;
+  --sidebar-accent: 215 20% 25%;
+  --sidebar-accent-foreground: 210 40% 95%;
+  --sidebar-border: 215 20% 37%;
+  --sidebar-ring: 238 84% 67%;
 }
 
 @layer base {
@@ -84,10 +86,10 @@
 /* Enhanced Neumorphic Styles */
 .neuro-button {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    8px 8px 16px rgba(163, 177, 198, 0.6),
-    -8px -8px 16px rgba(255, 255, 255, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    8px 8px 16px rgba(148, 163, 184, 0.15),
+    -8px -8px 16px rgba(241, 245, 249, 0.8),
+    inset 0 1px 0 rgba(241, 245, 249, 0.3);
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -107,10 +109,10 @@
 }
 
 .neuro-button:hover {
-  box-shadow: 
-    6px 6px 12px rgba(163, 177, 198, 0.6),
-    -6px -6px 12px rgba(255, 255, 255, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow:
+    6px 6px 12px rgba(148, 163, 184, 0.6),
+    -6px -6px 12px rgba(241, 245, 249, 0.5),
+    inset 0 1px 0 rgba(241, 245, 249, 0.4);
   transform: translateY(-1px);
 }
 
@@ -119,39 +121,39 @@
 }
 
 .neuro-button:active {
-  box-shadow: 
-    inset 4px 4px 8px rgba(163, 177, 198, 0.6),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.5);
+  box-shadow:
+    inset 4px 4px 8px rgba(148, 163, 184, 0.6),
+    inset -4px -4px 8px rgba(241, 245, 249, 0.5);
   transform: translateY(0);
 }
 
 .dark .neuro-button {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    8px 8px 16px rgba(0, 0, 0, 0.4),
-    -8px -8px 16px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  box-shadow:
+    8px 8px 16px rgba(30, 41, 59, 0.6),
+    -8px -8px 16px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.08);
 }
 
 .dark .neuro-button:hover {
-  box-shadow: 
-    6px 6px 12px rgba(0, 0, 0, 0.4),
-    -6px -6px 12px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    6px 6px 12px rgba(30, 41, 59, 0.6),
+    -6px -6px 12px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.12);
 }
 
 .dark .neuro-button:active {
-  box-shadow: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.4),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.05);
+  box-shadow:
+    inset 4px 4px 8px rgba(30, 41, 59, 0.6),
+    inset -4px -4px 8px rgba(241, 245, 249, 0.03);
 }
 
 .neuro-card {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    6px 6px 12px rgba(163, 177, 198, 0.4),
-    -6px -6px 12px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    6px 6px 12px rgba(148, 163, 184, 0.4),
+    -6px -6px 12px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -165,16 +167,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(145deg, transparent, rgba(255, 255, 255, 0.05));
+  background: linear-gradient(145deg, transparent, rgba(241, 245, 249, 0.05));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .neuro-card:hover {
-  box-shadow: 
-    4px 4px 8px rgba(163, 177, 198, 0.4),
-    -4px -4px 8px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow:
+    4px 4px 8px rgba(148, 163, 184, 0.4),
+    -4px -4px 8px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.15);
   transform: translateY(-1px);
 }
 
@@ -185,31 +187,31 @@
 .neuro-active {
   background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary)));
   color: hsl(var(--primary-foreground));
-  box-shadow: 
-    inset 3px 3px 6px rgba(163, 177, 198, 0.4),
-    inset -3px -3px 6px rgba(255, 255, 255, 0.3),
+  box-shadow:
+    inset 3px 3px 6px rgba(148, 163, 184, 0.4),
+    inset -3px -3px 6px rgba(241, 245, 249, 0.3),
     0 0 0 1px rgba(99, 102, 241, 0.2);
 }
 
 .dark .neuro-card {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    6px 6px 12px rgba(0, 0, 0, 0.3),
-    -6px -6px 12px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  box-shadow:
+    6px 6px 12px rgba(30, 41, 59, 0.3),
+    -6px -6px 12px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.02);
 }
 
 .dark .neuro-card:hover {
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.3),
-    -4px -4px 8px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    4px 4px 8px rgba(30, 41, 59, 0.3),
+    -4px -4px 8px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.05);
 }
 
 .dark .neuro-active {
-  box-shadow: 
-    inset 3px 3px 6px rgba(0, 0, 0, 0.3),
-    inset -3px -3px 6px rgba(255, 255, 255, 0.03),
+  box-shadow:
+    inset 3px 3px 6px rgba(30, 41, 59, 0.3),
+    inset -3px -3px 6px rgba(241, 245, 249, 0.03),
     0 0 0 1px rgba(129, 140, 248, 0.2);
 }
 
@@ -238,33 +240,33 @@
 .neuro-message-sent {
   background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary)));
   color: hsl(var(--primary-foreground));
-  box-shadow: 
-    4px 4px 8px rgba(163, 177, 198, 0.3),
-    -2px -2px 4px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    4px 4px 8px rgba(148, 163, 184, 0.3),
+    -2px -2px 4px rgba(241, 245, 249, 0.2),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
 }
 
 .neuro-message-received {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    4px 4px 8px rgba(163, 177, 198, 0.3),
-    -4px -4px 8px rgba(255, 255, 255, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    4px 4px 8px rgba(148, 163, 184, 0.3),
+    -4px -4px 8px rgba(241, 245, 249, 0.2),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
 }
 
 .dark .neuro-message-sent {
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.2),
-    -2px -2px 4px rgba(255, 255, 255, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    4px 4px 8px rgba(30, 41, 59, 0.2),
+    -2px -2px 4px rgba(241, 245, 249, 0.02),
+    inset 0 1px 0 rgba(241, 245, 249, 0.05);
 }
 
 .dark .neuro-message-received {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.2),
-    -4px -4px 8px rgba(255, 255, 255, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  box-shadow:
+    4px 4px 8px rgba(30, 41, 59, 0.2),
+    -4px -4px 8px rgba(241, 245, 249, 0.02),
+    inset 0 1px 0 rgba(241, 245, 249, 0.02);
 }
 
 .neuro-input-container {
@@ -273,47 +275,47 @@
 
 .neuro-input {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    inset 4px 4px 8px rgba(163, 177, 198, 0.4),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 4px 4px 8px rgba(148, 163, 184, 0.4),
+    inset -4px -4px 8px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
 
 .neuro-input:focus {
-  box-shadow: 
-    inset 6px 6px 12px rgba(163, 177, 198, 0.4),
-    inset -6px -6px 12px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+  box-shadow:
+    inset 6px 6px 12px rgba(148, 163, 184, 0.4),
+    inset -6px -6px 12px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.15),
     0 0 0 2px hsl(var(--primary));
   outline: none;
 }
 
 .dark .neuro-input {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.3),
-    inset -4px -4px 8px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  box-shadow:
+    inset 4px 4px 8px rgba(30, 41, 59, 0.3),
+    inset -4px -4px 8px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.02);
 }
 
 .dark .neuro-input:focus {
-  box-shadow: 
-    inset 6px 6px 12px rgba(0, 0, 0, 0.3),
-    inset -6px -6px 12px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+  box-shadow:
+    inset 6px 6px 12px rgba(30, 41, 59, 0.3),
+    inset -6px -6px 12px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.05),
     0 0 0 2px hsl(var(--primary));
 }
 
 .neuro-send-button {
   background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary)));
   color: hsl(var(--primary-foreground));
-  box-shadow: 
-    6px 6px 12px rgba(163, 177, 198, 0.4),
-    -6px -6px 12px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    6px 6px 12px rgba(148, 163, 184, 0.4),
+    -6px -6px 12px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -327,16 +329,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(145deg, transparent, rgba(255, 255, 255, 0.1));
+  background: linear-gradient(145deg, transparent, rgba(241, 245, 249, 0.1));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .neuro-send-button:hover {
-  box-shadow: 
-    4px 4px 8px rgba(163, 177, 198, 0.4),
-    -4px -4px 8px rgba(255, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow:
+    4px 4px 8px rgba(148, 163, 184, 0.4),
+    -4px -4px 8px rgba(241, 245, 249, 0.3),
+    inset 0 1px 0 rgba(241, 245, 249, 0.15);
   transform: translateY(-1px);
 }
 
@@ -345,38 +347,38 @@
 }
 
 .neuro-send-button:active {
-  box-shadow: 
-    inset 2px 2px 4px rgba(163, 177, 198, 0.4),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 2px 2px 4px rgba(148, 163, 184, 0.4),
+    inset -2px -2px 4px rgba(241, 245, 249, 0.3);
   transform: translateY(0);
 }
 
 .dark .neuro-send-button {
-  box-shadow: 
-    6px 6px 12px rgba(0, 0, 0, 0.3),
-    -6px -6px 12px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow:
+    6px 6px 12px rgba(30, 41, 59, 0.3),
+    -6px -6px 12px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.05);
 }
 
 .dark .neuro-send-button:hover {
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.3),
-    -4px -4px 8px rgba(255, 255, 255, 0.03),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow:
+    4px 4px 8px rgba(30, 41, 59, 0.3),
+    -4px -4px 8px rgba(241, 245, 249, 0.03),
+    inset 0 1px 0 rgba(241, 245, 249, 0.1);
 }
 
 .dark .neuro-send-button:active {
-  box-shadow: 
-    inset 2px 2px 4px rgba(0, 0, 0, 0.3),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 2px 2px 4px rgba(30, 41, 59, 0.3),
+    inset -2px -2px 4px rgba(241, 245, 249, 0.03);
 }
 
 /* Additional Neumorphic Components */
 .neuro-server-icon {
   background: linear-gradient(145deg, hsl(var(--background)), hsl(var(--card)));
-  box-shadow: 
-    4px 4px 8px rgba(163, 177, 198, 0.4),
-    -4px -4px 8px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    4px 4px 8px rgba(148, 163, 184, 0.4),
+    -4px -4px 8px rgba(241, 245, 249, 0.3);
   border: none;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -384,36 +386,36 @@
 }
 
 .neuro-server-icon:hover {
-  box-shadow: 
-    2px 2px 4px rgba(163, 177, 198, 0.4),
-    -2px -2px 4px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    2px 2px 4px rgba(148, 163, 184, 0.4),
+    -2px -2px 4px rgba(241, 245, 249, 0.3);
   transform: translateY(-1px);
 }
 
 .neuro-server-icon.active {
   background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary)));
   color: hsl(var(--primary-foreground));
-  box-shadow: 
-    inset 2px 2px 4px rgba(163, 177, 198, 0.4),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 2px 2px 4px rgba(148, 163, 184, 0.4),
+    inset -2px -2px 4px rgba(241, 245, 249, 0.3);
 }
 
 .dark .neuro-server-icon {
-  box-shadow: 
-    4px 4px 8px rgba(0, 0, 0, 0.3),
-    -4px -4px 8px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    4px 4px 8px rgba(30, 41, 59, 0.3),
+    -4px -4px 8px rgba(241, 245, 249, 0.03);
 }
 
 .dark .neuro-server-icon:hover {
-  box-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.3),
-    -2px -2px 4px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    2px 2px 4px rgba(30, 41, 59, 0.3),
+    -2px -2px 4px rgba(241, 245, 249, 0.03);
 }
 
 .dark .neuro-server-icon.active {
-  box-shadow: 
-    inset 2px 2px 4px rgba(0, 0, 0, 0.3),
-    inset -2px -2px 4px rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 2px 2px 4px rgba(30, 41, 59, 0.3),
+    inset -2px -2px 4px rgba(241, 245, 249, 0.03);
 }
 
 .neuro-channel-item {
@@ -424,27 +426,27 @@
 
 .neuro-channel-item:hover {
   background: linear-gradient(145deg, hsl(var(--accent)), hsl(var(--accent)));
-  box-shadow: 
-    2px 2px 4px rgba(163, 177, 198, 0.2),
-    -2px -2px 4px rgba(255, 255, 255, 0.1);
+  box-shadow:
+    2px 2px 4px rgba(148, 163, 184, 0.2),
+    -2px -2px 4px rgba(241, 245, 249, 0.1);
 }
 
 .neuro-channel-item.active {
   background: linear-gradient(145deg, hsl(var(--primary)), hsl(var(--primary)));
   color: hsl(var(--primary-foreground));
-  box-shadow: 
-    inset 1px 1px 2px rgba(163, 177, 198, 0.3),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 1px 1px 2px rgba(148, 163, 184, 0.3),
+    inset -1px -1px 2px rgba(241, 245, 249, 0.2);
 }
 
 .dark .neuro-channel-item:hover {
-  box-shadow: 
-    2px 2px 4px rgba(0, 0, 0, 0.2),
-    -2px -2px 4px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    2px 2px 4px rgba(30, 41, 59, 0.2),
+    -2px -2px 4px rgba(241, 245, 249, 0.02);
 }
 
 .dark .neuro-channel-item.active {
-  box-shadow: 
-    inset 1px 1px 2px rgba(0, 0, 0, 0.3),
-    inset -1px -1px 2px rgba(255, 255, 255, 0.02);
+  box-shadow:
+    inset 1px 1px 2px rgba(30, 41, 59, 0.3),
+    inset -1px -1px 2px rgba(241, 245, 249, 0.02);
 }

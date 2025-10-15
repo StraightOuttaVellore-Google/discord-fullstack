@@ -27,13 +27,12 @@ function App() {
   const [selectedServer, setSelectedServer] = useState('1')
   const [selectedChannel, setSelectedChannel] = useState('general')
   const socketRef = useRef(null)
+  const typingTimeoutRef = useRef(null)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [accessibleServerIds, setAccessibleServerIds] = useState([])
 
-  // Mock data for servers and channels
-  const [servers] = useState([
-    { id: '1', name: 'My Server', icon: '🏠' },
-    { id: '2', name: 'Gaming', icon: '🎮' },
-    { id: '3', name: 'Work', icon: '💼' },
-  ])
+  // Server data that will be updated from backend based on user permissions
+  const [servers, setServers] = useState({})
 
   const [channels] = useState({
     '1': [
@@ -104,9 +103,33 @@ function App() {
       setTypingUsers(prev => prev.filter(u => u !== data.username))
     })
 
+    socketRef.current.on('servers_data', (data) => {
+      setServers(data.servers)
+      // Set default server to first accessible server
+      const serverIds = Object.keys(data.servers)
+      if (serverIds.length > 0) {
+        setSelectedServer(serverIds[0])
+      }
+    })
+
+    socketRef.current.on('user_permissions', (data) => {
+      setAccessibleServerIds(data.accessible_servers)
+    })
+
+    socketRef.current.on('error', (data) => {
+      setErrorMessage(data.message)
+      // Clear error after 5 seconds
+      setTimeout(() => setErrorMessage(''), 5000)
+    })
+
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect()
+      }
+      // Clear typing timeout on cleanup
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
       }
     }
   }, [])
@@ -120,6 +143,13 @@ function App() {
 
   const sendMessage = () => {
     if (newMessage.trim() && socketRef.current && hasJoined) {
+      // Check if user has access to current server
+      if (!accessibleServerIds.includes(selectedServer)) {
+        setErrorMessage('You do not have access to this server')
+        setTimeout(() => setErrorMessage(''), 5000)
+        return
+      }
+      
       socketRef.current.emit('send_message', {
         user: username,
         text: newMessage,
@@ -127,14 +157,33 @@ function App() {
         channelId: selectedChannel
       })
       setNewMessage('')
+      
+      // Clear typing state when message is sent
+      if (isTyping) {
+        setIsTyping(false)
+        socketRef.current.emit('typing_stop', { 
+          username,
+          serverId: selectedServer,
+          channelId: selectedChannel
+        })
+      }
+      
+      // Clear any pending typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
     }
   }
 
   const currentChannelKey = `${selectedServer}-${selectedChannel}`
   const currentMessages = messages[currentChannelKey] || []
-  const currentServer = servers.find(s => s.id === selectedServer)
+  const currentServer = servers[selectedServer]
   const currentChannels = channels[selectedServer] || []
   const currentChannel = currentChannels.find(c => c.id === selectedChannel)
+  
+  // Convert servers object to array for UI rendering
+  const serverList = Object.values(servers)
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
@@ -149,12 +198,49 @@ function App() {
   const handleTyping = (e) => {
     setNewMessage(e.target.value)
     
+    // If user starts typing and wasn't typing before
     if (e.target.value && !isTyping) {
       setIsTyping(true)
-      socketRef.current.emit('typing_start', { username })
-    } else if (!e.target.value && isTyping) {
+      socketRef.current.emit('typing_start', { 
+        username,
+        serverId: selectedServer,
+        channelId: selectedChannel
+      })
+    }
+    
+    // If user clears the input completely
+    if (!e.target.value && isTyping) {
       setIsTyping(false)
-      socketRef.current.emit('typing_stop', { username })
+      socketRef.current.emit('typing_stop', { 
+        username,
+        serverId: selectedServer,
+        channelId: selectedChannel
+      })
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+      return
+    }
+    
+    // If user is typing, reset the timeout
+    if (e.target.value && isTyping) {
+      // Clear any existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+      
+      // Set new timeout to stop typing after 2 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false)
+        socketRef.current.emit('typing_stop', { 
+          username,
+          serverId: selectedServer,
+          channelId: selectedChannel
+        })
+        typingTimeoutRef.current = null
+      }, 2000)
     }
   }
 
@@ -209,7 +295,7 @@ function App() {
     <div className="h-screen bg-background text-foreground flex">
       {/* Server Sidebar */}
       <div className="w-16 bg-sidebar border-r border-border flex flex-col items-center py-3 space-y-2">
-        {servers.map((server) => (
+        {serverList.map((server) => (
           <Button
             key={server.id}
             variant="ghost"
@@ -344,6 +430,13 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="p-4 bg-destructive/10 border-l-4 border-destructive text-destructive">
+            <p className="text-sm font-medium">{errorMessage}</p>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">

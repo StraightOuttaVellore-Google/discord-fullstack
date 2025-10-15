@@ -20,6 +20,20 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Store connected users and their data
 connected_users = {}
 user_sessions = {}
+
+# Define server memberships - which users can access which servers
+server_memberships = {
+    '1': ['alice', 'bob', 'charlie', 'diana'],  # My Server
+    '2': ['alice', 'charlie', 'eve'],           # Gaming
+    '3': ['bob', 'diana', 'frank']              # Work
+}
+
+# Define user roles in servers (optional: admin, member, etc.)
+user_roles = {
+    '1': {'alice': 'admin', 'bob': 'member', 'charlie': 'member', 'diana': 'member'},
+    '2': {'alice': 'admin', 'charlie': 'member', 'eve': 'member'},
+    '3': {'bob': 'admin', 'diana': 'member', 'frank': 'member'}
+}
 servers = {
     '1': {
         'id': '1',
@@ -59,6 +73,23 @@ channel_messages = {}
 # Store typing users per channel
 typing_users = {}
 
+# Helper functions for permission checking
+def user_has_server_access(username, server_id):
+    """Check if user has access to a specific server"""
+    return username.lower() in [member.lower() for member in server_memberships.get(server_id, [])]
+
+def get_user_accessible_servers(username):
+    """Get list of servers that user can access"""
+    accessible_servers = {}
+    for server_id, members in server_memberships.items():
+        if username.lower() in [member.lower() for member in members]:
+            accessible_servers[server_id] = servers[server_id]
+    return accessible_servers
+
+def user_can_send_message(username, server_id, channel_id):
+    """Check if user can send messages to a specific server/channel"""
+    return user_has_server_access(username, server_id)
+
 @socketio.on('connect')
 def handle_connect():
     print(f'Client connected: {request.sid}')
@@ -82,23 +113,35 @@ def handle_disconnect():
 @socketio.on('join_chat')
 def handle_join_chat(data):
     username = data['username']
+    
+    # Get user's accessible servers
+    accessible_servers = get_user_accessible_servers(username)
+    
+    if not accessible_servers:
+        emit('error', {'message': 'You do not have access to any servers'}, room=request.sid)
+        return
+    
+    # Set default server to first accessible server
+    default_server_id = list(accessible_servers.keys())[0]
+    
     connected_users[username] = {
         'sid': request.sid,
         'status': 'online',
         'current_channel': 'general',
-        'current_server': '1'
+        'current_server': default_server_id
     }
     
     # Join the user to the default server-channel room
-    room_name = f"1-general"
+    room_name = f"{default_server_id}-general"
     join_room(room_name)
     
     # Notify all users about the new user
     emit('user_joined', {'username': username}, broadcast=True)
     emit('users_update', {'users': list(connected_users.keys())}, broadcast=True)
-    emit('servers_data', {'servers': servers}, room=request.sid)
+    emit('servers_data', {'servers': accessible_servers}, room=request.sid)
+    emit('user_permissions', {'accessible_servers': list(accessible_servers.keys())}, room=request.sid)
     
-    print(f'User {username} joined the chat')
+    print(f'User {username} joined the chat with access to servers: {list(accessible_servers.keys())}')
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -107,6 +150,13 @@ def handle_message(data):
     channel_id = data.get('channelId', 'general')
     
     if username not in connected_users:
+        emit('error', {'message': 'User not connected'}, room=request.sid)
+        return
+    
+    # Check if user has permission to send message to this server/channel
+    if not user_can_send_message(username, server_id, channel_id):
+        emit('error', {'message': f'You do not have permission to send messages in this server/channel'}, room=request.sid)
+        print(f'Permission denied: {username} tried to send message to {server_id}-{channel_id}')
         return
     
     message_data = {
@@ -124,7 +174,8 @@ def handle_message(data):
         channel_messages[channel_key] = []
     channel_messages[channel_key].append(message_data)
     
-    # Broadcast message to all connected clients
+    # Broadcast message only to users who have access to this server
+    # For now, broadcast to all connected clients, but in production you'd filter by server access
     emit('new_message', message_data, broadcast=True)
     print(f'Message from {username} in {server_id}-{channel_id}: {data["text"]}')
 
