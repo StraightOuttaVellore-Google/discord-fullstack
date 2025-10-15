@@ -10,9 +10,12 @@ import {
   Settings,
   Volume2
 } from 'lucide-react'
-import io from 'socket.io-client'
 import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
+
+// Configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
 
 function App() {
   const [darkMode, setDarkMode] = useState(false)
@@ -24,33 +27,20 @@ function App() {
   const [hasJoined, setHasJoined] = useState(false)
   const [isTyping, setIsTyping] = useState(false)
   const [typingUsers, setTypingUsers] = useState([])
-  const [selectedServer, setSelectedServer] = useState('1')
-  const [selectedChannel, setSelectedChannel] = useState('general')
-  const socketRef = useRef(null)
+  const [selectedServer, setSelectedServer] = useState(null)
+  const [selectedChannel, setSelectedChannel] = useState(null)
+  const wsRef = useRef(null)
   const typingTimeoutRef = useRef(null)
   const [errorMessage, setErrorMessage] = useState('')
-  const [accessibleServerIds, setAccessibleServerIds] = useState([])
+  const [token, setToken] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Server data that will be updated from backend based on user permissions
+  // Server and channel data from API
   const [servers, setServers] = useState({})
-
-  const [channels] = useState({
-    '1': [
-      { id: 'general', name: 'general', type: 'text' },
-      { id: 'random', name: 'random', type: 'text' },
-      { id: 'announcements', name: 'announcements', type: 'text' },
-    ],
-    '2': [
-      { id: 'general', name: 'general', type: 'text' },
-      { id: 'game-chat', name: 'game-chat', type: 'text' },
-      { id: 'voice-general', name: 'Voice General', type: 'voice' },
-    ],
-    '3': [
-      { id: 'general', name: 'general', type: 'text' },
-      { id: 'projects', name: 'projects', type: 'text' },
-      { id: 'meeting-room', name: 'Meeting Room', type: 'voice' },
-    ],
-  })
+  const [channels, setChannels] = useState({})
+  const [isLoadingServers, setIsLoadingServers] = useState(false)
+  const [isLoadingChannels, setIsLoadingChannels] = useState(false)
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false)
 
   useEffect(() => {
     if (darkMode) {
@@ -60,115 +50,262 @@ function App() {
     }
   }, [darkMode])
 
+  // Check for existing token on mount
   useEffect(() => {
-    // Initialize socket connection
-    const backendUrl = import.meta.env.VITE_SOCKET_URL || `http://${window.location.hostname}:5001`
-    socketRef.current = io(backendUrl, { transports: ['websocket', 'polling'] })
-
-    socketRef.current.on('connect', () => {
-      setIsConnected(true)
-      console.log('Connected to server')
-    })
-
-    socketRef.current.on('disconnect', () => {
-      setIsConnected(false)
-      console.log('Disconnected from server')
-    })
-
-    socketRef.current.on('new_message', (messageData) => {
-      const channelKey = `${messageData.serverId}-${messageData.channelId}`
-      setMessages(prev => ({
-        ...prev,
-        [channelKey]: [...(prev[channelKey] || []), messageData]
-      }))
-    })
-
-    socketRef.current.on('users_update', (data) => {
-      setUsers(data.users)
-    })
-
-    socketRef.current.on('user_joined', (data) => {
-      console.log(`${data.username} joined the chat`)
-    })
-
-    socketRef.current.on('user_left', (data) => {
-      console.log(`${data.username} left the chat`)
-    })
-
-    socketRef.current.on('typing_start', (data) => {
-      setTypingUsers(prev => [...prev.filter(u => u !== data.username), data.username])
-    })
-
-    socketRef.current.on('typing_stop', (data) => {
-      setTypingUsers(prev => prev.filter(u => u !== data.username))
-    })
-
-    socketRef.current.on('servers_data', (data) => {
-      setServers(data.servers)
-      // Set default server to first accessible server
-      const serverIds = Object.keys(data.servers)
-      if (serverIds.length > 0) {
-        setSelectedServer(serverIds[0])
-      }
-    })
-
-    socketRef.current.on('user_permissions', (data) => {
-      setAccessibleServerIds(data.accessible_servers)
-    })
-
-    socketRef.current.on('error', (data) => {
-      setErrorMessage(data.message)
-      // Clear error after 5 seconds
-      setTimeout(() => setErrorMessage(''), 5000)
-    })
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect()
-      }
-      // Clear typing timeout on cleanup
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-        typingTimeoutRef.current = null
-      }
+    const storedToken = localStorage.getItem('access_token')
+    if (storedToken) {
+      setToken(storedToken)
+      setIsAuthenticated(true)
+      fetchUserServers(storedToken)
     }
   }, [])
 
-  const joinChat = () => {
-    if (username.trim() && socketRef.current) {
-      socketRef.current.emit('join_chat', { username })
-      setHasJoined(true)
+  // Fetch user's accessible servers
+  const fetchUserServers = async (authToken) => {
+    setIsLoadingServers(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/servers`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          setErrorMessage('Session expired. Please login again.')
+          setIsAuthenticated(false)
+          localStorage.removeItem('access_token')
+          return
+        }
+        throw new Error('Failed to fetch servers')
+      }
+      
+      const serversData = await response.json()
+      
+      // Convert array to object keyed by ID
+      const serversObj = {}
+      serversData.forEach(server => {
+        serversObj[server.id] = server
+      })
+      
+      setServers(serversObj)
+      
+      // Select first server if available
+      if (serversData.length > 0) {
+        const firstServer = serversData[0]
+        setSelectedServer(firstServer.id)
+        fetchServerChannels(firstServer.id, authToken)
+      }
+    } catch (error) {
+      console.error('Error fetching servers:', error)
+      setErrorMessage('Failed to load servers')
+    } finally {
+      setIsLoadingServers(false)
     }
   }
 
-  const sendMessage = () => {
-    if (newMessage.trim() && socketRef.current && hasJoined) {
-      // Check if user has access to current server
-      if (!accessibleServerIds.includes(selectedServer)) {
-        setErrorMessage('You do not have access to this server')
+  // Fetch channels for a server
+  const fetchServerChannels = async (serverId, authToken = token) => {
+    setIsLoadingChannels(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/servers/${serverId}/channels`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch channels')
+      }
+      
+      const channelsData = await response.json()
+      
+      setChannels(prev => ({
+        ...prev,
+        [serverId]: channelsData
+      }))
+      
+      // Select first text channel
+      const firstTextChannel = channelsData.find(ch => ch.type === 'text')
+      if (firstTextChannel) {
+        setSelectedChannel(firstTextChannel.id)
+        fetchChannelMessages(serverId, firstTextChannel.id, authToken)
+      }
+    } catch (error) {
+      console.error('Error fetching channels:', error)
+      setErrorMessage('Failed to load channels')
+    } finally {
+      setIsLoadingChannels(false)
+    }
+  }
+
+  // Fetch message history for a channel
+  const fetchChannelMessages = async (serverId, channelId, authToken = token) => {
+    setIsLoadingMessages(true)
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/chat/servers/${serverId}/channels/${channelId}/messages?limit=50`,
+        {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        }
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages')
+      }
+      
+      const messagesData = await response.json()
+      const channelKey = `${serverId}-${channelId}`
+      
+      setMessages(prev => ({
+        ...prev,
+        [channelKey]: messagesData
+      }))
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+      setErrorMessage('Failed to load messages')
+    } finally {
+      setIsLoadingMessages(false)
+    }
+  }
+
+  // Initialize WebSocket connection
+  const connectWebSocket = () => {
+    if (!token) {
+      console.error('No token available for WebSocket connection')
+      return
+    }
+
+    const ws = new WebSocket(`${WS_BASE_URL}/chat/ws?token=${token}`)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setIsConnected(true)
+      console.log('WebSocket connected')
+    }
+
+    ws.onclose = () => {
+      setIsConnected(false)
+      console.log('WebSocket disconnected')
+      
+      // Attempt reconnection after 3 seconds
+      setTimeout(() => {
+        if (isAuthenticated && token) {
+          console.log('Attempting to reconnect...')
+          connectWebSocket()
+        }
+      }, 3000)
+    }
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error)
+      setErrorMessage('Connection error')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        handleWebSocketMessage(data)
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error)
+      }
+    }
+  }
+
+  // Handle incoming WebSocket messages
+  const handleWebSocketMessage = (data) => {
+    const { type } = data
+
+    switch (type) {
+      case 'connected':
+        console.log('Connected as:', data.username)
+        setUsername(data.username)
+        setHasJoined(true)
+        break
+
+      case 'new_message':
+        const channelKey = `${data.serverId}-${data.channelId}`
+        setMessages(prev => ({
+          ...prev,
+          [channelKey]: [...(prev[channelKey] || []), data]
+        }))
+        break
+
+      case 'typing_start':
+        if (data.username !== username) {
+          setTypingUsers(prev => {
+            if (!prev.includes(data.username)) {
+              return [...prev, data.username]
+            }
+            return prev
+          })
+        }
+        break
+
+      case 'typing_stop':
+        setTypingUsers(prev => prev.filter(u => u !== data.username))
+        break
+
+      case 'servers_data':
+        setServers(data.servers)
+        break
+
+      case 'error':
+        setErrorMessage(data.message)
         setTimeout(() => setErrorMessage(''), 5000)
+        break
+
+      default:
+        console.log('Unknown message type:', type, data)
+    }
+  }
+
+  // Connect WebSocket when authenticated
+  useEffect(() => {
+    if (isAuthenticated && token && !wsRef.current) {
+      connectWebSocket()
+    }
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+      }
+    }
+  }, [isAuthenticated, token])
+
+  const sendMessage = () => {
+    if (newMessage.trim() && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      if (!selectedServer || !selectedChannel) {
+        setErrorMessage('Please select a server and channel')
+        setTimeout(() => setErrorMessage(''), 3000)
         return
       }
-      
-      socketRef.current.emit('send_message', {
-        user: username,
-        text: newMessage,
+
+      wsRef.current.send(JSON.stringify({
+        type: 'send_message',
         serverId: selectedServer,
-        channelId: selectedChannel
-      })
+        channelId: selectedChannel,
+        text: newMessage
+      }))
+      
       setNewMessage('')
       
-      // Clear typing state when message is sent
+      // Clear typing state
       if (isTyping) {
         setIsTyping(false)
-        socketRef.current.emit('typing_stop', { 
-          username,
+        wsRef.current.send(JSON.stringify({
+          type: 'typing_stop',
           serverId: selectedServer,
           channelId: selectedChannel
-        })
+        }))
       }
       
-      // Clear any pending typing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
         typingTimeoutRef.current = null
@@ -176,47 +313,35 @@ function App() {
     }
   }
 
-  const currentChannelKey = `${selectedServer}-${selectedChannel}`
-  const currentMessages = messages[currentChannelKey] || []
-  const currentServer = servers[selectedServer]
-  const currentChannels = channels[selectedServer] || []
-  const currentChannel = currentChannels.find(c => c.id === selectedChannel)
-  
-  // Convert servers object to array for UI rendering
-  const serverList = Object.values(servers)
-
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
-      if (!hasJoined) {
-        joinChat()
-      } else {
-        sendMessage()
-      }
+      sendMessage()
     }
   }
 
   const handleTyping = (e) => {
     setNewMessage(e.target.value)
     
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return
+    
     // If user starts typing and wasn't typing before
     if (e.target.value && !isTyping) {
       setIsTyping(true)
-      socketRef.current.emit('typing_start', { 
-        username,
+      wsRef.current.send(JSON.stringify({
+        type: 'typing_start',
         serverId: selectedServer,
         channelId: selectedChannel
-      })
+      }))
     }
     
     // If user clears the input completely
     if (!e.target.value && isTyping) {
       setIsTyping(false)
-      socketRef.current.emit('typing_stop', { 
-        username,
+      wsRef.current.send(JSON.stringify({
+        type: 'typing_stop',
         serverId: selectedServer,
         channelId: selectedChannel
-      })
-      // Clear any existing timeout
+      }))
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
         typingTimeoutRef.current = null
@@ -224,91 +349,112 @@ function App() {
       return
     }
     
-    // If user is typing, reset the timeout
+    // Reset timeout for typing indicator
     if (e.target.value && isTyping) {
-      // Clear any existing timeout
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
       }
       
-      // Set new timeout to stop typing after 2 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         setIsTyping(false)
-        socketRef.current.emit('typing_stop', { 
-          username,
-          serverId: selectedServer,
-          channelId: selectedChannel
-        })
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'typing_stop',
+            serverId: selectedServer,
+            channelId: selectedChannel
+          }))
+        }
         typingTimeoutRef.current = null
       }, 2000)
     }
   }
 
+  const handleServerChange = (serverId) => {
+    setSelectedServer(serverId)
+    setSelectedChannel(null)
+    if (!channels[serverId]) {
+      fetchServerChannels(serverId)
+    } else {
+      const firstTextChannel = channels[serverId].find(ch => ch.type === 'text')
+      if (firstTextChannel) {
+        setSelectedChannel(firstTextChannel.id)
+        fetchChannelMessages(serverId, firstTextChannel.id)
+      }
+    }
+  }
 
-  if (!hasJoined) {
+  const handleChannelChange = (channelId) => {
+    setSelectedChannel(channelId)
+    if (selectedServer) {
+      fetchChannelMessages(selectedServer, channelId)
+    }
+  }
+
+  // Show authentication required message if no token
+  if (!isAuthenticated) {
     return (
       <div className="h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="w-full max-w-md p-8">
+        <div className="w-full max-w-md p-8 text-center">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               NeuroDiscord
             </h1>
-            <p className="text-muted-foreground">Enter your username to join the servers</p>
+            <p className="text-muted-foreground">Please login through the main application</p>
           </div>
           
-          <div className="space-y-6">
-            <div className="neuro-input-container">
-              <Input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your username..."
-                className="neuro-input text-center text-lg"
-              />
+          {errorMessage && (
+            <div className="p-4 bg-destructive/10 border border-destructive text-destructive rounded-md mb-4">
+              {errorMessage}
             </div>
-            
+          )}
+          
+          <div className="flex justify-center">
             <Button
-              onClick={joinChat}
-              disabled={!username.trim() || !isConnected}
-              className="w-full neuro-send-button text-lg py-3"
+              variant="ghost"
+              size="sm"
+              onClick={() => setDarkMode(!darkMode)}
+              className="neuro-button"
             >
-              {isConnected ? 'Join Servers' : 'Connecting...'}
+              {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            
-            <div className="flex justify-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDarkMode(!darkMode)}
-                className="neuro-button"
-              >
-                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-              </Button>
-            </div>
           </div>
         </div>
       </div>
     )
   }
 
+  const currentChannelKey = selectedServer && selectedChannel ? `${selectedServer}-${selectedChannel}` : null
+  const currentMessages = currentChannelKey ? (messages[currentChannelKey] || []) : []
+  const currentServer = selectedServer ? servers[selectedServer] : null
+  const currentChannels = selectedServer ? (channels[selectedServer] || []) : []
+  const currentChannel = currentChannels.find(c => c.id === selectedChannel)
+  
+  const serverList = Object.values(servers)
+
   return (
     <div className="h-screen bg-background text-foreground flex">
       {/* Server Sidebar */}
       <div className="w-16 bg-sidebar border-r border-border flex flex-col items-center py-3 space-y-2">
-        {serverList.map((server) => (
-          <Button
-            key={server.id}
-            variant="ghost"
-            size="icon"
-            onClick={() => setSelectedServer(server.id)}
-            className={`w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center text-lg transition-all duration-200 ${
-              selectedServer === server.id ? 'active rounded-xl' : 'hover:rounded-xl'
-            }`}
-            title={server.name}
-          >
-            {server.icon}
-          </Button>
-        ))}
+        {isLoadingServers ? (
+          <div className="w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center">
+            <div className="animate-spin">⏳</div>
+          </div>
+        ) : (
+          serverList.map((server) => (
+            <Button
+              key={server.id}
+              variant="ghost"
+              size="icon"
+              onClick={() => handleServerChange(server.id)}
+              className={`w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center text-lg transition-all duration-200 ${
+                selectedServer === server.id ? 'active rounded-xl' : 'hover:rounded-xl'
+              }`}
+              title={server.name}
+            >
+              {server.icon}
+            </Button>
+          ))
+        )}
         
         <div className="flex-1" />
         
@@ -328,7 +474,7 @@ function App() {
         {/* Server Header */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold truncate">{currentServer?.name}</h1>
+            <h1 className="text-lg font-semibold truncate">{currentServer?.name || 'Select Server'}</h1>
             <Button variant="ghost" size="sm" className="neuro-button">
               <Settings className="h-4 w-4" />
             </Button>
@@ -356,23 +502,27 @@ function App() {
               </Button>
             </div>
             
-            <div className="space-y-1">
-              {currentChannels
-                .filter(channel => channel.type === 'text')
-                .map((channel) => (
-                <Button
-                  key={channel.id}
-                  variant="ghost"
-                  onClick={() => setSelectedChannel(channel.id)}
-                  className={`w-full justify-start px-2 py-1.5 h-auto text-sm neuro-channel-item ${
-                    selectedChannel === channel.id ? 'active' : ''
-                  }`}
-                >
-                  <Hash className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{channel.name}</span>
-                </Button>
-              ))}
-            </div>
+            {isLoadingChannels ? (
+              <div className="text-sm text-muted-foreground">Loading channels...</div>
+            ) : (
+              <div className="space-y-1">
+                {currentChannels
+                  .filter(channel => channel.type === 'text')
+                  .map((channel) => (
+                  <Button
+                    key={channel.id}
+                    variant="ghost"
+                    onClick={() => handleChannelChange(channel.id)}
+                    className={`w-full justify-start px-2 py-1.5 h-auto text-sm neuro-channel-item ${
+                      selectedChannel === channel.id ? 'active' : ''
+                    }`}
+                  >
+                    <Hash className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">{channel.name}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
 
             {currentChannels.some(channel => channel.type === 'voice') && (
               <>
@@ -424,7 +574,7 @@ function App() {
         <div className="p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
             <Hash className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">{currentChannel?.name}</h2>
+            <h2 className="text-lg font-semibold">{currentChannel?.name || 'Select Channel'}</h2>
             <div className="text-sm text-muted-foreground ml-2">
               {currentChannels.filter(c => c.type === 'text').length} text channels
             </div>
@@ -440,7 +590,11 @@ function App() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {currentMessages.length === 0 ? (
+          {isLoadingMessages ? (
+            <div className="text-center text-muted-foreground py-8">
+              Loading messages...
+            </div>
+          ) : currentMessages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <Hash className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Welcome to #{currentChannel?.name}!</p>
@@ -486,14 +640,14 @@ function App() {
                 value={newMessage}
                 onChange={handleTyping}
                 onKeyPress={handleKeyPress}
-                placeholder={`Message #${currentChannel?.name}`}
+                placeholder={currentChannel ? `Message #${currentChannel.name}` : 'Select a channel'}
                 className="neuro-input"
-                disabled={!isConnected}
+                disabled={!isConnected || !selectedChannel}
               />
             </div>
             <Button
               onClick={sendMessage}
-              disabled={!newMessage.trim() || !isConnected}
+              disabled={!newMessage.trim() || !isConnected || !selectedChannel}
               className="neuro-send-button"
               size="sm"
             >
@@ -503,28 +657,17 @@ function App() {
         </div>
       </div>
 
-      {/* Members Sidebar */}
+      {/* Members Sidebar - Can be populated from server members API */}
       <div className="w-60 bg-card border-l border-border flex flex-col">
         <div className="p-4 border-b border-border">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Members — {users.length}
+            Members
           </h3>
         </div>
         
         <div className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-2">
-            {users.map((user) => (
-              <div key={user} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent/50 transition-colors">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center relative">
-                  <span className="text-sm font-medium">{user[0]?.toUpperCase()}</span>
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></div>
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{user}</div>
-                  <div className="text-xs text-muted-foreground">Online</div>
-                </div>
-              </div>
-            ))}
+          <div className="text-sm text-muted-foreground text-center">
+            Member list coming soon
           </div>
         </div>
       </div>
