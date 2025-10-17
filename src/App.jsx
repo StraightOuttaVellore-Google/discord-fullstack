@@ -52,11 +52,43 @@ function App() {
 
   // Check for existing token on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('access_token')
-    if (storedToken) {
-      setToken(storedToken)
+    // First, check if token is passed in URL query parameter (from main app)
+    const urlParams = new URLSearchParams(window.location.search)
+    const tokenFromUrl = urlParams.get('token')
+    
+    if (tokenFromUrl) {
+      // Store token in localStorage for this origin
+      localStorage.setItem('access_token', tokenFromUrl)
+      setToken(tokenFromUrl)
       setIsAuthenticated(true)
-      fetchUserServers(storedToken)
+      fetchUserServers(tokenFromUrl)
+      
+      // Clean up URL to remove token query parameter
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else {
+      // Fall back to checking localStorage (for page refresh or direct navigation)
+      const storedToken = localStorage.getItem('access_token')
+      
+      if (storedToken) {
+        setToken(storedToken)
+        setIsAuthenticated(true)
+        fetchUserServers(storedToken)
+      } else {
+        // Try to get token from parent window if in iframe
+        try {
+          if (window.parent && window.parent !== window) {
+            const parentToken = window.parent.localStorage?.getItem('access_token')
+            if (parentToken) {
+              localStorage.setItem('access_token', parentToken)
+              setToken(parentToken)
+              setIsAuthenticated(true)
+              fetchUserServers(parentToken)
+            }
+          }
+        } catch (e) {
+          // Could not access parent window
+        }
+      }
     }
   }, [])
 
@@ -90,11 +122,22 @@ function App() {
       
       setServers(serversObj)
       
-      // Select first server if available
-      if (serversData.length > 0) {
-        const firstServer = serversData[0]
-        setSelectedServer(firstServer.id)
-        fetchServerChannels(firstServer.id, authToken)
+      // Check if there's a stored server selection from sessionStorage
+      const storedServerId = sessionStorage.getItem('selectedServerId')
+      let serverToSelect = null
+      
+      if (storedServerId && serversObj[storedServerId]) {
+        // Use the stored server if it exists
+        serverToSelect = storedServerId
+        sessionStorage.removeItem('selectedServerId') // Clear after use
+      } else if (serversData.length > 0) {
+        // Otherwise select first server
+        serverToSelect = serversData[0].id
+      }
+      
+      if (serverToSelect) {
+        setSelectedServer(serverToSelect)
+        fetchServerChannels(serverToSelect, authToken)
       }
     } catch (error) {
       console.error('Error fetching servers:', error)
@@ -125,11 +168,29 @@ function App() {
         [serverId]: channelsData
       }))
       
-      // Select first text channel
-      const firstTextChannel = channelsData.find(ch => ch.type === 'text')
-      if (firstTextChannel) {
-        setSelectedChannel(firstTextChannel.id)
-        fetchChannelMessages(serverId, firstTextChannel.id, authToken)
+      // Check if there's a stored channel selection from sessionStorage
+      const storedChannelId = sessionStorage.getItem('selectedChannelId')
+      let channelToSelect = null
+      
+      if (storedChannelId) {
+        const matchingChannel = channelsData.find(ch => ch.id === storedChannelId)
+        if (matchingChannel) {
+          channelToSelect = storedChannelId
+          sessionStorage.removeItem('selectedChannelId') // Clear after use
+        }
+      }
+      
+      // If no stored channel, select first text channel
+      if (!channelToSelect) {
+        const firstTextChannel = channelsData.find(ch => ch.type === 'text')
+        if (firstTextChannel) {
+          channelToSelect = firstTextChannel.id
+        }
+      }
+      
+      if (channelToSelect) {
+        setSelectedChannel(channelToSelect)
+        fetchChannelMessages(serverId, channelToSelect, authToken)
       }
     } catch (error) {
       console.error('Error fetching channels:', error)
