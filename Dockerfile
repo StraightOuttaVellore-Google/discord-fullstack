@@ -7,7 +7,10 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Install all dependencies (including dev dependencies needed for build)
+# Vite is required for building but is a dev dependency
+RUN npm ci
 
 # Copy source code
 COPY . .
