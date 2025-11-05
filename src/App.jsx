@@ -8,14 +8,16 @@ import {
   Hash,
   Plus,
   Settings,
-  Volume2
+  Volume2,
+  Menu,
+  X
 } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { Input } from './components/ui/input'
 
-// Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000'
+// Configuration - Use centralized config for smart URL detection
+import { API_BASE_URL, getWebSocketUrl } from './config/apiConfig'
+const WS_BASE_URL = getWebSocketUrl('')
 
 function App() {
   const [darkMode, setDarkMode] = useState(false)
@@ -41,6 +43,9 @@ function App() {
   const [isLoadingServers, setIsLoadingServers] = useState(false)
   const [isLoadingChannels, setIsLoadingChannels] = useState(false)
   const [isLoadingMessages, setIsLoadingMessages] = useState(false)
+  const [showServerSidebar, setShowServerSidebar] = useState(false)
+  const [showChannelsSidebar, setShowChannelsSidebar] = useState(false)
+  const [showMembersSidebar, setShowMembersSidebar] = useState(false)
 
   useEffect(() => {
     if (darkMode) {
@@ -502,9 +507,28 @@ function App() {
   const serverList = Object.values(servers)
 
   return (
-    <div className="h-screen bg-background text-foreground flex">
+    <div className="h-screen bg-background text-foreground flex overflow-hidden">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => {
+          setShowServerSidebar(!showServerSidebar)
+          if (showServerSidebar) {
+            setShowChannelsSidebar(false)
+          } else {
+            setShowChannelsSidebar(true)
+          }
+          setShowMembersSidebar(false)
+        }}
+        className="fixed top-3 left-3 z-50 md:hidden w-10 h-10 rounded-lg neuro-button flex items-center justify-center min-h-[44px] min-w-[44px]"
+        aria-label="Toggle menu"
+      >
+        {showServerSidebar ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
+
       {/* Server Sidebar */}
-      <div className="w-16 bg-sidebar border-r border-border flex flex-col items-center py-3 space-y-2">
+      <div className={`fixed md:static inset-y-0 left-0 z-40 w-16 bg-sidebar border-r border-border flex flex-col items-center py-3 space-y-2 transition-transform duration-300 ${
+        showServerSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}>
         {isLoadingServers ? (
           <div className="w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center">
             <div className="animate-spin">⏳</div>
@@ -515,8 +539,11 @@ function App() {
               key={server.id}
               variant="ghost"
               size="icon"
-              onClick={() => handleServerChange(server.id)}
-              className={`w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center text-lg transition-all duration-200 ${
+              onClick={() => {
+                handleServerChange(server.id)
+                setShowServerSidebar(false)
+              }}
+              className={`w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center text-lg transition-all duration-200 min-h-[44px] min-w-[44px] ${
                 selectedServer === server.id ? 'active rounded-xl' : 'hover:rounded-xl'
               }`}
               title={server.name}
@@ -532,7 +559,7 @@ function App() {
           variant="ghost"
           size="icon"
           onClick={() => setDarkMode(!darkMode)}
-          className="w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center"
+          className="w-12 h-12 rounded-2xl neuro-server-icon flex items-center justify-center min-h-[44px] min-w-[44px]"
           title="Toggle Theme"
         >
           {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -540,12 +567,20 @@ function App() {
       </div>
 
       {/* Channels Sidebar */}
-      <div className="w-60 bg-card border-r border-border flex flex-col">
+      <div className={`fixed md:static inset-y-0 z-30 w-60 bg-card border-r border-border flex flex-col transition-transform duration-300 ${
+        showChannelsSidebar || showServerSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      } ${showServerSidebar && !showChannelsSidebar ? 'left-16' : 'left-0 md:left-auto'}`}
+      >
         {/* Server Header */}
-        <div className="p-4 border-b border-border">
+        <div className="p-3 md:p-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold truncate">{currentServer?.name || 'Select Server'}</h1>
-            <Button variant="ghost" size="sm" className="neuro-button">
+            <h1 className="text-base md:text-lg font-semibold truncate">{currentServer?.name || 'Select Server'}</h1>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="neuro-button min-h-[44px] min-w-[44px]"
+              onClick={() => setShowChannelsSidebar(false)}
+            >
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -562,13 +597,13 @@ function App() {
 
         {/* Channels List */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-3">
+          <div className="p-2 md:p-3">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Text Channels
               </h3>
-              <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
-                <Plus className="h-3 w-3" />
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 min-h-[44px] min-w-[44px]">
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
             
@@ -582,8 +617,12 @@ function App() {
                   <Button
                     key={channel.id}
                     variant="ghost"
-                    onClick={() => handleChannelChange(channel.id)}
-                    className={`w-full justify-start px-2 py-1.5 h-auto text-sm neuro-channel-item ${
+                    onClick={() => {
+                      handleChannelChange(channel.id)
+                      setShowChannelsSidebar(false)
+                      setShowServerSidebar(false)
+                    }}
+                    className={`w-full justify-start px-2 py-2 md:py-1.5 h-auto min-h-[44px] text-sm md:text-sm neuro-channel-item ${
                       selectedChannel === channel.id ? 'active' : ''
                     }`}
                   >
@@ -600,8 +639,8 @@ function App() {
                   <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Voice Channels
                   </h3>
-                  <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
-                    <Plus className="h-3 w-3" />
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 min-h-[44px] min-w-[44px]">
+                    <Plus className="h-4 w-4" />
                   </Button>
                 </div>
                 
@@ -612,7 +651,7 @@ function App() {
                     <Button
                       key={channel.id}
                       variant="ghost"
-                      className="w-full justify-start px-2 py-1.5 h-auto text-sm neuro-channel-item"
+                      className="w-full justify-start px-2 py-2 md:py-1.5 h-auto min-h-[44px] text-sm neuro-channel-item"
                     >
                       <Volume2 className="h-4 w-4 mr-2 flex-shrink-0" />
                       <span className="truncate">{channel.name}</span>
@@ -625,9 +664,9 @@ function App() {
         </div>
 
         {/* User Info */}
-        <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-3 p-2 rounded-md neuro-card">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+        <div className="p-2 md:p-3 border-t border-border">
+          <div className="flex items-center gap-2 md:gap-3 p-2 rounded-md neuro-card">
+            <div className="w-8 h-8 md:w-8 md:h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
               <span className="text-sm font-medium">{username[0]?.toUpperCase()}</span>
             </div>
             <div className="flex-1 min-w-0">
@@ -639,50 +678,71 @@ function App() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Channel Header */}
-        <div className="p-4 border-b border-border bg-card">
-          <div className="flex items-center gap-2">
-            <Hash className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">{currentChannel?.name || 'Select Channel'}</h2>
-            <div className="text-sm text-muted-foreground ml-2">
+        <div className="p-3 md:p-4 border-b border-border bg-card flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <button
+              onClick={() => {
+                setShowChannelsSidebar(!showChannelsSidebar)
+                setShowServerSidebar(false)
+              }}
+              className="md:hidden mr-2 w-10 h-10 rounded-lg neuro-button flex items-center justify-center flex-shrink-0"
+              aria-label="Toggle channels"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <Hash className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
+            <h2 className="text-base md:text-lg font-semibold truncate">{currentChannel?.name || 'Select Channel'}</h2>
+            <div className="hidden md:block text-sm text-muted-foreground ml-2">
               {currentChannels.filter(c => c.type === 'text').length} text channels
             </div>
           </div>
+          <button
+            onClick={() => {
+              setShowMembersSidebar(!showMembersSidebar)
+              setShowChannelsSidebar(false)
+              setShowServerSidebar(false)
+            }}
+            className="md:hidden w-10 h-10 rounded-lg neuro-button flex items-center justify-center flex-shrink-0"
+            aria-label="Toggle members"
+          >
+            <Users className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Error Message */}
         {errorMessage && (
-          <div className="p-4 bg-destructive/10 border-l-4 border-destructive text-destructive">
+          <div className="p-3 md:p-4 bg-destructive/10 border-l-4 border-destructive text-destructive">
             <p className="text-sm font-medium">{errorMessage}</p>
           </div>
         )}
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4">
           {isLoadingMessages ? (
             <div className="text-center text-muted-foreground py-8">
-              Loading messages...
+              <div className="text-sm md:text-base">Loading messages...</div>
             </div>
           ) : currentMessages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <Hash className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Welcome to #{currentChannel?.name}!</p>
-              <p className="text-sm mt-1">This is the start of the #{currentChannel?.name} channel.</p>
+              <Hash className="h-8 w-8 md:h-12 md:w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-sm md:text-base">Welcome to #{currentChannel?.name}!</p>
+              <p className="text-xs md:text-sm mt-1">This is the start of the #{currentChannel?.name} channel.</p>
             </div>
           ) : (
             currentMessages.map((message) => (
               <div key={message.id} className="group">
-                <div className="flex items-start gap-3 p-2 rounded-md hover:bg-accent/20 transition-colors">
-                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-medium">{message.user[0]?.toUpperCase()}</span>
+                <div className="flex items-start gap-2 md:gap-3 p-2 rounded-md hover:bg-accent/20 transition-colors">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs md:text-sm font-medium">{message.user[0]?.toUpperCase()}</span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-sm font-medium">{message.user}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 mb-1 flex-wrap">
+                      <span className="text-sm md:text-sm font-medium">{message.user}</span>
                       <span className="text-xs text-muted-foreground">{message.timestamp}</span>
                     </div>
-                    <div className="text-sm">{message.text}</div>
+                    <div className="text-sm md:text-sm break-words">{message.text}</div>
                   </div>
                 </div>
               </div>
@@ -691,7 +751,7 @@ function App() {
           
           {/* Typing Indicator */}
           {typingUsers.length > 0 && (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm px-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs md:text-sm px-2">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-current rounded-full animate-bounce"></div>
                 <div className="w-2 h-2 bg-current rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -703,22 +763,22 @@ function App() {
         </div>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-border bg-card">
-          <div className="flex gap-3">
+        <div className="p-3 md:p-4 border-t border-border bg-card">
+          <div className="flex gap-2 md:gap-3">
             <div className="flex-1 neuro-input-container">
               <Input
                 value={newMessage}
                 onChange={handleTyping}
                 onKeyPress={handleKeyPress}
                 placeholder={currentChannel ? `Message #${currentChannel.name}` : 'Select a channel'}
-                className="neuro-input"
+                className="neuro-input text-base md:text-sm min-h-[44px]"
                 disabled={!isConnected || !selectedChannel}
               />
             </div>
             <Button
               onClick={sendMessage}
               disabled={!newMessage.trim() || !isConnected || !selectedChannel}
-              className="neuro-send-button"
+              className="neuro-send-button min-h-[44px] min-w-[44px]"
               size="sm"
             >
               <Send className="h-4 w-4" />
@@ -728,19 +788,40 @@ function App() {
       </div>
 
       {/* Members Sidebar - Can be populated from server members API */}
-      <div className="w-60 bg-card border-l border-border flex flex-col">
-        <div className="p-4 border-b border-border">
+      <div className={`fixed md:static inset-y-0 right-0 z-30 w-60 bg-card border-l border-border flex flex-col transition-transform duration-300 ${
+        showMembersSidebar ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+      }`}>
+        <div className="p-3 md:p-4 border-b border-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             Members
           </h3>
+          <button
+            onClick={() => setShowMembersSidebar(false)}
+            className="md:hidden w-8 h-8 rounded-lg neuro-button flex items-center justify-center"
+            aria-label="Close members"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 md:p-4">
           <div className="text-sm text-muted-foreground text-center">
             Member list coming soon
           </div>
         </div>
       </div>
+
+      {/* Mobile Overlay */}
+      {(showServerSidebar || showChannelsSidebar || showMembersSidebar) && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => {
+            setShowServerSidebar(false)
+            setShowChannelsSidebar(false)
+            setShowMembersSidebar(false)
+          }}
+        />
+      )}
     </div>
   )
 }
